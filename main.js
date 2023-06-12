@@ -4,24 +4,24 @@ import Preload from "./public/assets/scenes/preloader.js";
 // Create a new Phaser config object
 const config = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
+  width: 480,
+  height: 240,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     min: {
-      width: 800,
-      height: 600,
+      width: 480,
+      height: 240,
     },
     max: {
-      width: 1600,
-      height: 1200,
+      width: 2400,
+      height: 1500,
     },
   },
   physics: {
     default: "arcade",
     arcade: {
-      gravity: { y: 200 },
+      gravity: { y: 1000 },
       debug: true,
     },
   },
@@ -29,7 +29,9 @@ const config = {
   // Only the first scene will be shown
   // Remember to import the scene before adding it to the list
   scene: [Preload, Game],
+  zoom: 2
 };
 
 // Create a new Phaser game instance
 window.game = new Phaser.Game(config);
+
