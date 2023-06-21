@@ -61,7 +61,7 @@ export default class Game extends Phaser.Scene {
 
     this.physics.add.collider(this.player, backgroundLayer6);
     this.physics.add.collider(this.zombie, backgroundLayer6);
-    this.physics.add.collider(
+    this.physics.add.overlap(
       this.zombie,
       this.bullets,
       this.dañoZombie,
