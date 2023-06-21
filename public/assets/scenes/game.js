@@ -95,7 +95,7 @@ export default class Game extends Phaser.Scene {
       this.physics.moveTo(
         bullet,
         this.input.mousePointer.x,
-        this.input.mousePointer.y + 70,
+        this.input.mousePointer.y + 80,
         speed
       );
 
