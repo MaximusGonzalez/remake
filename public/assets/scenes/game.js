@@ -1,9 +1,42 @@
+import { SHAPES, POINTS_PERCENTAGE, POINTS_PERCENTAGE_VALUE_START } from '../../../utils.js';
+const { TRIANGLE, SQUARE, DIAMOND} = SHAPES;
+
 export default class Game extends Phaser.Scene {
   constructor() {
     super("game");
   }
 
+  init() {
+    this.shapesRecolected = {
+      [TRIANGLE]: { count: 0, score: 10},
+      [SQUARE]: { count: 0, score: 20 },
+      [DIAMOND]: { count: 0, score: 30 },
+    };
+    console.log(this.shapesRecolected)
+  }
+
   create() {
+
+    this.shapesGroup = this.physics.add.group();
+    // this.shapesGroup.create(100, 0, 'diamond');
+    // this.shapesGroup.create(200, 0, 'triangle');
+    // this.shapesGroup.create(300, 0, 'square');
+    // create event to add shapes
+    this.time.addEvent({
+      delay: 500,
+      callback: this.addShape,
+      callbackScope: this,
+      loop: true,
+    });
+
+    this.time.addEvent({
+      delay: 1000,
+      callback: this.onSecond,
+      callbackScope: this,
+      loop: true,
+    });
+
+    this.physics.world.setBounds(0, 0, 240, 480);
     //creo el mapa nivel
     const map = this.make.tilemap({ key: "nivel" });
 
@@ -34,56 +67,88 @@ export default class Game extends Phaser.Scene {
       (obj) => obj.name === "personaje"
     );
 
-    const zombieSpawn = map.findObject(
-      "objetos1",
-      (obj) => obj.name === "zombie"
-    );
+    let platforms = this.physics.add.staticGroup();
+    platforms.create(120, 433, "deleter").setScale(1).refreshBody();
+
+   // const zombieSpawn = map.findObject(
+    //  "objetos1",
+   //   (obj) => obj.name === "zombie"
+    //);
 
     // creo al jugador (x, y, son tomados del spawnpoint creado con spawnPoint.x, spawnPoint.y, nombre de imagen usada para el personaje)
     this.player = this.physics.add
       .sprite(spawnPoint.x, spawnPoint.y, "dude")
       .setCollideWorldBounds(true)
       .setBounce(0.1);
-    this.zombie = this.physics.add.sprite(
-      zombieSpawn.x,
-      zombieSpawn.y,
-      "Zombie"
-    );
+    //this.zombie = this.physics.add.sprite(
+    //  zombieSpawn.x,
+     // zombieSpawn.y,
+     // "Zombie"
+   // );
 
     this.bullets = this.physics.add.group({
       inmovable: true,
       allowGravity: false,
     });
 
-    this.zombie.setCollideWorldBounds(true);
-    this.physics.world.setBounds(0, 0, 2400, 360);
+    //this.zombie.setCollideWorldBounds(true);
+
     this.cursors = this.input.keyboard.createCursorKeys();
 
     this.physics.add.collider(this.player, backgroundLayer6);
-    this.physics.add.collider(this.zombie, backgroundLayer6);
     this.physics.add.overlap(
-      this.zombie,
+      this.shapesGroup,
       this.bullets,
-      this.dañoZombie,
+      this.reduce,
       null,
       this
     );
+    this.physics.add.overlap(
+      this.shapesGroup,
+      platforms,
+      this.killshapes,
+      null,
+      this
+    );
+    this.physics.add.overlap(
+      this.bullets,
+      platforms,
+      this.killbullet,
+      null,
+      this
+    );
+    this.physics.add.overlap(
+      this.shapesGroup,
+      this.player,
+      this.gameover,
+      null,
+      this
+    );
+
+    //this.physics.add.collider(this.zombie, backgroundLayer6);
+    //this.physics.add.overlap(
+     // this.zombie,
+    //  this.bullets,
+     // this.dañoZombie,
+    //  null,
+    //  this
+    //);
 
     this.cameras.main.startFollow(this.player);
 
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
-    this.cameras.main.setViewport(0, 0, 480, 240);
+    this.cameras.main.setViewport(0, 0, 240, 300);
     this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 
     this.input.on("pointerdown", (pointer) => {
-      let speed = 300;
+      let speed = 350;
 
       // create bullet
       let bullet = this.physics.add
-        .image(this.player.x, this.player.y, "Bullet")
-        .setScale(3)
-        .setCircle(1, 0.5, 0.5);
+        .image(this.player.x, this.player.y -18, "Bullet")
+        .setScale(1)
+        .setCircle(4, 0.5, 0.5);
 
       // DEMO: to shoot in a straightline, just comment the following line in
 
@@ -95,15 +160,36 @@ export default class Game extends Phaser.Scene {
       this.physics.moveTo(
         bullet,
         this.input.mousePointer.x,
-        this.input.mousePointer.y + 80,
+        this.input.mousePointer.y + 180,
         speed
       );
-
+      this.physics.add.overlap(
+        this.shapesGroup,
+        this.bullets,
+        this.reduce,
+        null,
+        this
+      );
       //bullet.body.setVelocity(vector.x, vector.y);
+    });
+
+    // add timer
+    this.timer = 30;
+    this.timerText = this.add.text(20, 250, "Sobrevive otros " + this.timer + " segundos.", {
+      fontSize: "12px",
+      fontStyle: "bold",
+      fill: "#FFFFFF",
     });
   }
 
   update() {
+
+    if (
+      this.timer <= 0
+    ) {
+      this.scene.start("Win")
+    }
+
     //move left
     if (this.cursors.left.isDown) {
       this.player.setVelocityX(-200);
@@ -117,15 +203,63 @@ export default class Game extends Phaser.Scene {
     //stop
     else {
       this.player.setVelocityX(0);
-      this.player.anims.play("turn");
+      this.player.anims.play("turn", true);
     }
 
     //jump
     if (this.cursors.up.isDown && this.player.body.blocked.down) {
       this.player.setVelocityY(-500);
+      this.player.anims.play("jump", true);
     }
   }
-  dañoZombie(zombie, bullet) {
+
+  addShape() {
+    // get random shape
+    const randomShape = Phaser.Math.RND.pick([DIAMOND, SQUARE, TRIANGLE]);
+
+    // get random position x
+    const randomX = Phaser.Math.RND.between(0, 240);
+
+    // add shape to screen
+    this.shapesGroup.create(randomX, 0, randomShape)
+      .setCircle(16, 0, 0)
+      .setBounce(0.8)
+      .setData(POINTS_PERCENTAGE, POINTS_PERCENTAGE_VALUE_START);
+
+    console.log("shape is added", randomX, randomShape);
+  }
+
+  reduce(shape, bullet){
+    const newPercentage = shape.getData(POINTS_PERCENTAGE) - 0.45;
+    shape.setData(POINTS_PERCENTAGE, newPercentage);
+    if (newPercentage <= 0) {
+      shape.destroy(true, true);
+      bullet.destroy(true, true);
+      return;
+    }
     bullet.destroy();
   }
+  
+  killshapes(shape, platforms) {
+  shape.destroy();
+  }
+
+  killbullet(bullet, platforms) {
+  bullet.destroy();
+  }
+
+  gameover(shape, player) {
+    this.scene.start("GameOver");
+    }
+
+  onSecond(){
+    this.timer--;
+    this.timerText.setText("Sobrevive otros " + this.timer + " segundos.",);
+    if(this.timer <= 0){
+    this.scene.start("Win");
+    }
+  }
+  //dañoZombie(zombie, bullet) {
+ //   bullet.destroy();
+  //}
 }
