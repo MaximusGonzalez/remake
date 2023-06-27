@@ -207,10 +207,10 @@ export default class Game extends Phaser.Scene {
     }
 
     //jump
-    if (this.cursors.up.isDown && this.player.body.blocked.down) {
-      this.player.setVelocityY(-500);
-      this.player.anims.play("jump", true);
-    }
+    //if (this.cursors.up.isDown && this.player.body.blocked.down) {
+     // this.player.setVelocityY(-500);
+     // this.player.anims.play("jump", true);
+    //}
   }
 
   addShape() {
